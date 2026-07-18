@@ -1,15 +1,11 @@
 ﻿using Fcg.Orders.Application.ReadModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Fcg.Orders.Application.Interfaces
 {
-    public interface IGameSnapshot
+    public interface IGameSnapshotRepository
     {
         Task<GameSnapshot> GetSnapshotByIdAsync(Guid gameId);
+        Task<IEnumerable<GameSnapshot>> GetAllSnapshotsByIdsAsync(IEnumerable<Guid> gamesIds);
         void AddSnapShot(GameSnapshot snapShot);
         void UpdateSnapShot(GameSnapshot snapShot);
         void DeleteSnapShot(GameSnapshot snapShot);
