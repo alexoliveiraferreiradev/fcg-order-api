@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fcg.Orders.Infrastructure.Repositories
 {
-    public class GameSnapshotRepository : IGameSnapshot
+    public class GameSnapshotRepository : IGameSnapshotRepository
     {
         private readonly OrderDbContext _dbContext;
 
@@ -22,6 +22,11 @@ namespace Fcg.Orders.Infrastructure.Repositories
         public void DeleteSnapShot(GameSnapshot snapShot)
         {
             _dbContext.GameSnapshots.Remove(snapShot);
+        }
+
+        public async Task<IEnumerable<GameSnapshot>> GetAllSnapshotsByIdsAsync(IEnumerable<Guid> gamesIds)
+        {
+            return await _dbContext.GameSnapshots.Where(x => gamesIds.Contains(x.GameId)).ToListAsync();
         }
 
         public async Task<GameSnapshot> GetSnapshotByIdAsync(Guid gameId)
