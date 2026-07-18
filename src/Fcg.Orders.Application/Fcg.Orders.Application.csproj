@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fcg.Core.SharedContracts" Version="1.0.1" />
+    <ProjectReference Include="..\Fcg.Orders.Domain\Fcg.Orders.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Fcg.Orders.Domain\Fcg.Orders.Domain.csproj" />
+    <Folder Include="Features\Commands\" />
   </ItemGroup>
 
 </Project>
