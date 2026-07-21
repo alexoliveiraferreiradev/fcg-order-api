@@ -14,6 +14,11 @@ namespace Fcg.Orders.Infrastructure.Repositories
             _dbContext = dbContext;
         }
 
+        public void AddUserLibrary(UserLibrarySnapshot userLibrarySnapshot)
+        {
+            _dbContext.UserLibrarySnapshots.Add(userLibrarySnapshot);       
+        }
+
         public async Task<IEnumerable<UserLibrarySnapshot>> GetPurchasedGamesByUserIdAsync(Guid userId, IEnumerable<Guid> gamesIds)
         {            
             return await _dbContext.UserLibrarySnapshots.Where(x=>x.UserId == userId && gamesIds.Contains(x.UserId)).ToListAsync();

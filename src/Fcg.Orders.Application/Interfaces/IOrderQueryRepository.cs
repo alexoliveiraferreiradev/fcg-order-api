@@ -1,6 +1,5 @@
 ﻿using Fcg.Core.Abstractions.Common;
 using Fcg.Orders.Application.Features.Response;
-using Fcg.Orders.Domain.Entities;
 
 namespace Fcg.Orders.Domain.Interfaces
 {

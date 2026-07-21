@@ -17,7 +17,9 @@ namespace Fcg.Orders.API.Extentions
     {
         public static WebApplicationBuilder AddServicesExtensions(this WebApplicationBuilder builder)
         {
-            builder.AddDbContextExtension();
+            builder
+                .AddMasstransitExtension()
+                .AddDbContextExtension();
             return builder;
         }
 

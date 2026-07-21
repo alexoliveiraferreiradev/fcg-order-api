@@ -1,6 +1,7 @@
 ﻿using Fcg.Orders.Domain.Entities;
-using Fcg.Orders.Domain.Interfaces;
+using Fcg.Orders.Domain.Repositories;
 using Fcg.Orders.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fcg.Orders.Infrastructure.Repositories
 {
@@ -16,6 +17,11 @@ namespace Fcg.Orders.Infrastructure.Repositories
         public void AddOrderAsync(Order order)
         {
             _dbContext.Orders.Add(order);   
+        }
+
+        public async Task<Order> GetOrderById(Guid orderId)
+        {
+            return await _dbContext.Orders.FirstOrDefaultAsync(x => x.Id == orderId);
         }
     }
 }

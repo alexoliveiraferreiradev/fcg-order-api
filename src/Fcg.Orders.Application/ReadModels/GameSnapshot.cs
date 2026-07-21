@@ -1,4 +1,6 @@
-﻿namespace Fcg.Orders.Application.ReadModels
+﻿using System.Globalization;
+
+namespace Fcg.Orders.Application.ReadModels
 {
     public class GameSnapshot
     {
@@ -26,14 +28,14 @@
             IsAvailableForPurchase = true;
         }
 
-        public void Deactive(Guid gameId, string nameGame, string descriptionGame, decimal currentPrice)
+        public void Update(string nameGame, string descriptionGame, decimal currentPrice, bool isAvaiable, DateTime occurredAt)
         {
-            GameId = gameId;
             Name = nameGame;
             Description = descriptionGame;
             CurrentPrice = currentPrice;
-            LastSycendAt = DateTime.UtcNow;
-            IsAvailableForPurchase = false;
+            IsAvailableForPurchase = isAvaiable;    
+            LastSycendAt = occurredAt;  
         }
+
     }
 }

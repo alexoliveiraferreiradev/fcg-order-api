@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Fcg.Orders.Application.ReadModels
+﻿namespace Fcg.Orders.Domain.ReadModels
 {
     public class UserLibrarySnapshot
     {
@@ -12,13 +6,14 @@ namespace Fcg.Orders.Application.ReadModels
         public Guid GameId { get; private set; }
         public DateTime AcquiredAt { get; private set; }
         public DateTime LastSyncedAt { get; private set; }
+        public UserLibrarySnapshot() { }    
 
-        public UserLibrarySnapshot(Guid userId, Guid gameId)
+        public void Create(Guid userId, Guid gameId,  DateTime acquiredAt, DateTime lastSyncedAt)
         {
             UserId = userId;    
             GameId = gameId;    
-            AcquiredAt = DateTime.Now;  
-            LastSyncedAt = DateTime.Now;    
+            AcquiredAt = acquiredAt;    
+            LastSyncedAt = lastSyncedAt;    
         }
     }
 }
