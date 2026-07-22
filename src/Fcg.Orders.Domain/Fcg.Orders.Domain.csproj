@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Fcg.Core.Abstractions" Version="1.0.1" />
+    <PackageReference Include="MediatR.Contracts" Version="2.0.1" />
   </ItemGroup>
 
 </Project>

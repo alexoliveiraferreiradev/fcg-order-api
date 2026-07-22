@@ -14,7 +14,7 @@ namespace Fcg.Orders.Infrastructure.Repositories
             _dbContext = dbContext;
         }
 
-        public void AddOrderAsync(Order order)
+        public void AddOrder(Order order)
         {
             _dbContext.Orders.Add(order);   
         }
@@ -22,6 +22,11 @@ namespace Fcg.Orders.Infrastructure.Repositories
         public async Task<Order> GetOrderById(Guid orderId)
         {
             return await _dbContext.Orders.FirstOrDefaultAsync(x => x.Id == orderId);
+        }
+
+        public void UpdateOrder(Order order)
+        {
+            _dbContext.Orders.Update(order);    
         }
     }
 }

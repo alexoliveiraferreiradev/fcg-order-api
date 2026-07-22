@@ -4,7 +4,8 @@ namespace Fcg.Orders.Domain.Repositories
 {
     public interface IOrderRepository
     {
-        void AddOrderAsync(Order order);
+        void AddOrder(Order order);
         Task<Order> GetOrderById(Guid orderId);
+        void UpdateOrder(Order order); 
     }
 }
