@@ -15,7 +15,11 @@ namespace Fcg.Orders.Infrastructure.MessageBroker
 
         public const string SectionName = "RabbitMqSettings";
         [Required]
-        public string OrderCreatedQueue { get; set; } = string.Empty;
+        public string OrderPaymentFailedQueue { get; set; } = string.Empty;
+        [Required]
+        public string OrderPaymentSucessedQueue { get; set; } = string.Empty;
+        [Required]
+        public string GameCreatedIntegrationQueue { get; set; } = string.Empty;
 
     }
 }
