@@ -13,6 +13,8 @@
   <ItemGroup>
     <PackageReference Include="MassTransit.Abstractions" Version="8.4.1" />
 	  <PackageReference Include="Fcg.Core.SharedContracts" Version="1.0.5" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="MediatR" Version="14.1.0" />
   </ItemGroup>
 
