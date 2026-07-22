@@ -2,6 +2,7 @@
 using Fcg.Core.SharedContracts.MessageContracts;
 using Fcg.Orders.Application.Interfaces;
 using Fcg.Orders.Application.ReadModels;
+using Fcg.Orders.Domain.Events;
 using Fcg.Orders.Domain.Repositories;
 using MassTransit;
 using MediatR;
@@ -34,22 +35,19 @@ namespace Fcg.Orders.Application.Features.Commands.FinalizeSucessOrder
             {
                 
                 var orderUser = await _orderRepository.GetOrderById(request.OrderId);
-                _logger.LogInformation("[CatalogAPI] Pagamento aprovado para o Pedido: {OrderId}. Adicionando Jogos à Biblioteca do Usuário: {UserId}", request.OrderId, request.UserId);
+                _logger.LogInformation("[OrderAPI] Pagamento aprovado para o Pedido: {OrderId}. Adicionando Jogos à Biblioteca do Usuário: {UserId}", request.OrderId, request.UserId);
 
                 foreach (var guidJogo in request.GameIds)
                 {
                     var librarySnapshot = new UserLibrarySnapshot(orderUser.UserId,guidJogo);
                     _userLibrarySnapshotRepository.AddUserLibrary(librarySnapshot); 
-
-                    
-
-                }
-                //await _mediator.Publish(new LibraryEvent(request.UserId));
+                }              
 
                 orderUser.FinalizeOrder();
 
-                _logger.LogInformation("[CatalogAPI] Publicado LibraryEvent para o Usuário: {UserId}", request.UserId);
+                _logger.LogInformation("[OrderAPI] Publicado OrderEvent para o Usuário: {UserId}", request.UserId);
 
+                await _mediator.Publish(new OrderEvent(request.UserId));
 
                 await _unitOfWork.CommitAsync();
             }

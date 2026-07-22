@@ -3,7 +3,8 @@ using Fcg.Core.Abstractions.Interfaces;
 using Fcg.Core.SharedContracts.MessageContracts;
 using Fcg.Orders.Application.Interfaces;
 using Fcg.Orders.Domain.Entities;
-using Fcg.Orders.Domain.Interfaces;
+using Fcg.Orders.Domain.Events;
+using Fcg.Orders.Domain.Repositories;
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -18,8 +19,9 @@ namespace Fcg.Orders.Application.Features.Commands.PlaceOrder
         private readonly IGameSnapshotRepository _gameSnapshotRepository;
         private readonly IUserSnapshotLibraryRepository _userLibrarySnapshotRepository;
         private readonly ILogger<PlaceOrderCommandHandler> _logger;
+        private readonly IMediator _mediator;
 
-        public PlaceOrderCommandHandler(IPublishEndpoint publishEndpoint, IUnitOfWork unitOfWork, IOrderRepository orderRepository, ILogger<PlaceOrderCommandHandler> logger, IGameSnapshotRepository gameSnapshotRepository, IUserSnapshotLibraryRepository userLibrarySnapshotRepository)
+        public PlaceOrderCommandHandler(IPublishEndpoint publishEndpoint, IUnitOfWork unitOfWork, IOrderRepository orderRepository, ILogger<PlaceOrderCommandHandler> logger, IGameSnapshotRepository gameSnapshotRepository, IUserSnapshotLibraryRepository userLibrarySnapshotRepository, IMediator mediator)
         {
             _publishEndpoint = publishEndpoint;
             _unitOfWork = unitOfWork;
@@ -27,6 +29,7 @@ namespace Fcg.Orders.Application.Features.Commands.PlaceOrder
             _logger = logger;
             _gameSnapshotRepository = gameSnapshotRepository;
             _userLibrarySnapshotRepository = userLibrarySnapshotRepository;
+            _mediator = mediator;
         }
 
         public async Task<bool> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)
@@ -67,7 +70,11 @@ namespace Fcg.Orders.Application.Features.Commands.PlaceOrder
 
             order.MakeOrder();
 
-            _orderRepository.AddOrderAsync(order);
+            _logger.LogInformation("[OrderAPI] Publicado OrderEvent para o Usuário: {UserId}", request.UserId);
+
+            await _mediator.Publish(new OrderEvent(request.UserId));
+
+            _orderRepository.AddOrder(order);
 
             await _publishEndpoint.Publish<IOrderPlacedEvent>(new
             {
