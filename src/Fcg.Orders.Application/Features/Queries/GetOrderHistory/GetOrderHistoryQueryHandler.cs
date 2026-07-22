@@ -18,7 +18,7 @@ namespace Fcg.Orders.Application.Features.Queries.GetOrderHistory
         }
         public async Task<PagedResult<OrderHistoryResponse>> Handle(GetOrderHistoryQuery request, CancellationToken cancellationToken)
         {
-            var cacheKey = $"order_u:{request.UserId}_p:{request.Page}_s:{request.PageSize}";
+            var cacheKey = $"order:_u:{request.UserId}:_p:{request.Page}:_s:{request.PageSize}";
             var cachedOrderHistory = await _cacheService.GetAsync<PagedResult<OrderHistoryResponse>>(cacheKey, cancellationToken);
 
             if (cachedOrderHistory != null)
