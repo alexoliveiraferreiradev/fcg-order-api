@@ -1,6 +1,4 @@
-﻿
-
-using Dapper;
+﻿using Dapper;
 using Fcg.Core.Abstractions.Interfaces;
 using Fcg.Core.WebApi.Security;
 using Fcg.Orders.API.Consumer;
@@ -36,7 +34,6 @@ namespace Fcg.Orders.API.Extentions
                    .HealthCheckExtension()
                    .AddSerilogExtension()
                    .AddMasstransitExtension()
-                   .JsonExtensions()
                    .AddRedisExtension()
                    .AddDbContextExtension()
                    .AddCQRSExtension()
@@ -84,23 +81,7 @@ namespace Fcg.Orders.API.Extentions
             return builder;
         }
         #endregion
-
-        #region Json Extension
-        private static WebApplicationBuilder JsonExtensions(this WebApplicationBuilder builder)
-        {
-            builder.Services.ConfigureHttpJsonOptions(options =>
-            {
-                options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-            });
-
-            builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options =>
-            {
-                options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-            });
-            return builder;
-        }
-        #endregion
-
+        
         #region MassTransit
         private static WebApplicationBuilder AddMasstransitExtension(this WebApplicationBuilder builder)
         {

@@ -7,7 +7,7 @@ namespace Fcg.Orders.API.Extentions
 {
     public static class SwaggerExtensions
     {
-        public static WebApplicationBuilder AddOpenApiExtension(this WebApplicationBuilder builder)
+        public static WebApplicationBuilder AddSwaggerService(this WebApplicationBuilder builder)
         {
             builder.Services.AddOpenApi();
             builder.Services.AddEndpointsApiExplorer();
@@ -30,7 +30,7 @@ namespace Fcg.Orders.API.Extentions
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 options.IncludeXmlComments(xmlPath);
 
-                var xmlFileApp = "Fcg.Catalog.Application.xml";
+                var xmlFileApp = "Fcg.Orders.Application.xml";
                 var xmlPathApp = Path.Combine(AppContext.BaseDirectory, xmlFileApp);
 
                 if (File.Exists(xmlPathApp))
@@ -63,7 +63,36 @@ namespace Fcg.Orders.API.Extentions
                  });
 
             });
+
+            builder.JsonExtensions();
+
             return builder;
+        }
+
+        private static WebApplicationBuilder JsonExtensions(this WebApplicationBuilder builder)
+        {
+            builder.Services.ConfigureHttpJsonOptions(options =>
+            {
+                options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+            });
+
+            builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+            });
+            return builder;
+        }
+
+        public static WebApplication UseSwaggerExtension(this WebApplication app)
+        {
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Fiap Cloud Games - API de Usuários");
+            });
+
+            return app;
         }
     }
 }
