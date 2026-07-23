@@ -7,6 +7,7 @@ namespace Fcg.Orders.Application.ReadModels
         public Guid GameId { get;private  set; }
         public string Name { get; private set; } = string.Empty;
         public string Description { get; private set; } = string.Empty;
+        public string Genre { get; private set; } = string.Empty;
         public decimal CurrentPrice { get; private set; }
         public DateTime LastSycendAt { get; private set; }
         public bool IsAvailableForPurchase { get; private set; }
@@ -18,10 +19,11 @@ namespace Fcg.Orders.Application.ReadModels
             LastSycendAt = occuredAt;
         }
 
-        public void Create( Guid gameId, string nameGame, string descriptionGame, decimal currentPrice)
+        public void Create( Guid gameId, string nameGame, string descriptionGame, string genreGame, decimal currentPrice)
         {
             GameId = gameId;
             Name = nameGame;
+            Genre = genreGame;
             Description = descriptionGame;
             CurrentPrice = currentPrice;
             LastSycendAt = DateTime.UtcNow;

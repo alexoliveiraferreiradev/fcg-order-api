@@ -25,6 +25,10 @@ namespace Fcg.Orders.Infrastructure.Persistence.Mapping
                 .HasMaxLength(500)
                 .IsRequired();
 
+            builder.Property(g=>g.Genre)
+                .HasMaxLength(80)
+                .IsRequired();  
+
             builder.Property(g => g.CurrentPrice)
                 .HasDefaultValue(0)
                 .HasPrecision(18,2)
