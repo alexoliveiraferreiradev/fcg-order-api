@@ -18,8 +18,9 @@ namespace Fcg.Orders.Application.Features.Commands.FinalizeSucessOrder
         private readonly IMediator _mediator;
         private readonly IPublishEndpoint _publishEndpoint;
         private readonly IUserSnapshotLibraryRepository _userLibrarySnapshotRepository;
+        private readonly IGameSnapshotRepository _gameSnapshotRepository;
 
-        public FinalizeSucessOrderCommandHandler(IOrderRepository orderRepository, IUnitOfWork unitOfWork, ILogger<FinalizeSucessOrderCommandHandler> logger, IMediator mediator, IPublishEndpoint publishEndpoint, IUserSnapshotLibraryRepository userLibrarySnapshotRepository)
+        public FinalizeSucessOrderCommandHandler(IOrderRepository orderRepository, IUnitOfWork unitOfWork, ILogger<FinalizeSucessOrderCommandHandler> logger, IMediator mediator, IPublishEndpoint publishEndpoint, IUserSnapshotLibraryRepository userLibrarySnapshotRepository, IGameSnapshotRepository gameSnapshotRepository)
         {
             _orderRepository = orderRepository;
             _unitOfWork = unitOfWork;
@@ -27,27 +28,41 @@ namespace Fcg.Orders.Application.Features.Commands.FinalizeSucessOrder
             _mediator = mediator;
             _publishEndpoint = publishEndpoint;
             _userLibrarySnapshotRepository = userLibrarySnapshotRepository;
+            _gameSnapshotRepository = gameSnapshotRepository;
         }
 
         public async Task Handle(FinalizeSucessOrderCommand request, CancellationToken cancellationToken)
         {
             try
             {
-                
+                var now = DateTime.UtcNow;
                 var orderUser = await _orderRepository.GetOrderById(request.OrderId);
                 _logger.LogInformation("[OrderAPI] Pagamento aprovado para o Pedido: {OrderId}. Adicionando Jogos à Biblioteca do Usuário: {UserId}", request.OrderId, request.UserId);
 
                 foreach (var guidJogo in request.GameIds)
                 {
-                    var librarySnapshot = new UserLibrarySnapshot(orderUser.UserId,guidJogo);
-                    _userLibrarySnapshotRepository.AddUserLibrary(librarySnapshot); 
+                    var gamesnapshot = await _gameSnapshotRepository.GetSnapshotByIdAsync(guidJogo);
+                    var librarySnapshot = new UserLibrarySnapshot(orderUser.UserId, gamesnapshot.GameId);
+                    _userLibrarySnapshotRepository.AddUserLibrary(librarySnapshot);
+
+                    await _publishEndpoint.Publish<IGameUserLibraryEvent>(new
+                    {
+                        UserId = orderUser.Id,
+                        GameId = gamesnapshot.GameId,
+                        Name = gamesnapshot.Name,
+                        IsAvaiable = true,
+                        Description = gamesnapshot.Description,
+                        Genre = gamesnapshot.Genre,
+                        OccurredAt = now
+                    });
+
                 }              
 
                 orderUser.FinalizeOrder();
 
                 _logger.LogInformation("[OrderAPI] Publicado OrderEvent para o Usuário: {UserId}", request.UserId);
 
-                await _mediator.Publish(new OrderEvent(request.UserId));
+                await _mediator.Publish(new OrderEvent(request.UserId));                              
 
                 await _unitOfWork.CommitAsync();
             }
