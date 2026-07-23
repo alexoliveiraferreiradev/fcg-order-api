@@ -15,7 +15,7 @@ namespace Fcg.Orders.Application.IntegrationEvents.Handlers
             _snapshotRepository = snapshotRepository;
         }
 
-        public async Task Handle(Guid gameId, string name, string description, decimal price, bool isAvaiable,
+        public async Task Handle(Guid gameId, string name, string description, string genre, decimal price, bool isAvaiable,
             DateTime occurredAt)
         {
             var game = await _snapshotRepository.GetSnapshotByIdAsync(gameId);
@@ -23,7 +23,7 @@ namespace Fcg.Orders.Application.IntegrationEvents.Handlers
             if(game is null)
             {
                 game = new GameSnapshot();
-                game.Create(gameId, name, description, price);
+                game.Create(gameId,genre, name, description, price);
             }
             else
             {

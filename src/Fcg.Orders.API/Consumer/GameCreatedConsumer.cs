@@ -15,7 +15,7 @@ namespace Fcg.Orders.API.Consumer
         public async Task Consume(ConsumeContext<IGameCreatedIntegrationEvent> context)
         {
             var message = context.Message;
-            await _handler.Handle(message.GameId, message.Name, message.Description,
+            await _handler.Handle(message.GameId, message.Name, message.Description,message.Genre,
                 message.Price, message.IsAvaiable, message.CreatedAt);
         }
     }
