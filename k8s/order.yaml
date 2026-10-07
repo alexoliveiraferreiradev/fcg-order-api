@@ -1,0 +1,203 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fcg-orders-api-deployment
+  labels:
+    app: fcg-orders-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fcg-orders-api
+  template:
+    metadata:
+      labels: 
+        app: fcg-orders-api
+      annotations:
+        autor: Alex O Ferreira
+        description: "Deployment do microsservico de Order API do Fiap Cloud Games"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - fcg-orders-api
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: c-fcg-order-api
+        image: alexoliverdev/fcg-order-api:1.1.9
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "300m"
+            memory: "256Mi"
+        env:
+          - name: MongoDatabaseSettings__Host
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: MONGO_SERVER
+          - name: MongoDatabaseSettings__Port
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: MONGO_PORT
+          - name: MongoDatabaseSettings__DatabaseName    
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: MONGO_DB_NAME
+          - name: MongoDatabaseSettings__Username    
+            valueFrom:
+              secretKeyRef:
+                name: order-opaque
+                key: MONGO_USER
+          - name: MongoDatabaseSettings__Password    
+            valueFrom:
+              secretKeyRef:
+                name: order-opaque
+                key: MONGO_PASS
+          - name: DatabaseSettings__Host
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: DB_SERVER
+          - name: DatabaseSettings__DatabaseName
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: DB_NAME
+          - name: DatabaseSettings__Port
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: DB_PORT          
+          - name: DatabaseSettings__Username
+            valueFrom:
+              secretKeyRef:
+                name: order-opaque
+                key: DB_USER
+          - name: DatabaseSettings__Password
+            valueFrom:
+              secretKeyRef:
+                name: order-opaque
+                key: DB_PASS
+          - name: ASPNETCORE_ENVIRONMENT
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: ENVIRONMENT
+          - name: RabbitMqSettings__Host
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: RABBITMQ_SERVER
+          - name: RabbitMqSettings__Port
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: RABBITMQ_PORT
+          - name: RabbitMqSettings__Username
+            valueFrom:
+              secretKeyRef:
+                name: order-opaque
+                key: RABBITMQ_USER
+          - name: RabbitMqSettings__Password
+            valueFrom:
+              secretKeyRef:
+                name: order-opaque
+                key: RABBITMQ_PASS
+          - name: RabbitMqSettings__OrderPaymentFailedQueue
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: ORDER_PAYMENT_FAILED_QUEUE
+          - name: RabbitMqSettings__OrderPaymentSucceededQueue
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: ORDER_PAYMENT_SUCCEEDED_QUEUE
+          - name: RabbitMqSettings__GameCreatedIntegrationQueue
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: ORDER_GAME_CREATED_INTEGRATION_QUEUE
+          - name: RabbitMqSettings__GameDeactiveIntegrationQueue
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: GAME_DEACTIVE_INTEGRATION_QUEUE
+          - name: RabbitMqSettings__GameReactiveIntegrationQueue
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: GAME_REACTIVE_INTEGRATION_QUEUE
+          - name: RedisSettings__Host
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: REDIS_SERVER
+          - name: RedisSettings__Port
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: REDIS_PORT
+          - name: RedisSettings__InstanceName
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: REDIS_NAME
+          - name: RedisSettings__Password
+            valueFrom:
+              secretKeyRef:
+                name: order-opaque
+                key: REDIS_PASS
+          - name: JwtSettings__Issuer
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: JWT_ISSUER
+          - name: JwtSettings__Audience
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: JWT_AUDIENCE
+          - name: JwtSettings__Secret
+            valueFrom:
+              secretKeyRef:
+                name: order-opaque
+                key: JWT_SECRET
+        livenessProbe:
+          httpGet:
+            path: /health/liveness
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/readiness
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-fcg-orders-api
+spec:
+  type: ClusterIP
+  selector:
+    app: fcg-orders-api
+  ports:
+    - port: 8086
+      targetPort: 8080

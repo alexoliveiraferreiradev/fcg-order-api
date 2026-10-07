@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-config
+data:
+  DB_SERVER: sql-service
+  DB_PORT: "1433"
+  DB_NAME: "Fcg_Orders"
+  MONGO_PORT: "27017"
+  MONGO_DB_NAME: "fcg_orders"
+  MONGO_SERVER: mongo-service
+  RABBITMQ_SERVER: rabbitmq-service
+  RABBITMQ_PORT: "5672"
+  REDIS_SERVER: redis-service
+  REDIS_PORT: "6379" 
+  REDIS_NAME: "FiapCloudGames:" 
+  ORDER_PAYMENT_FAILED_QUEUE: "order-payment-failed-queue"
+  ORDER_PAYMENT_SUCCEEDED_QUEUE: "order-payment-succeeded-queue"
+  ORDER_GAME_CREATED_INTEGRATION_QUEUE: "order-game-created-integration-queue"
+  GAME_DEACTIVE_INTEGRATION_QUEUE: "order-game-deactive-integration-queue"
+  GAME_REACTIVE_INTEGRATION_QUEUE: "order-game-reactive-integration-queue"
+  ENVIRONMENT: "Development"
+  JWT_ISSUER: "FiapCloudGames"
+  JWT_AUDIENCE: "FiapCloudGamesAudience"
