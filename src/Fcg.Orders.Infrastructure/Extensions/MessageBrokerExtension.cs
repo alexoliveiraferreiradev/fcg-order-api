@@ -1,5 +1,6 @@
 ﻿using Fcg.Core.SharedContracts.Interfaces;
 using Fcg.Core.SharedContracts.MessageContracts;
+using Fcg.Core.SharedContracts.Messaging;
 using Fcg.Core.WebApi.MessageBroker;
 using Fcg.Orders.Infrastructure.Consumers;
 using Fcg.Orders.Infrastructure.Consumers.Filters;
@@ -39,15 +40,15 @@ namespace Fcg.Orders.Infrastructure.Extensions
 
                     cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)).Ignore<FluentValidation.ValidationException>());
 
-                    cfg.Message<IUserCreatedIntegrationEvent>(m => m.SetEntityName(ServiceBusTopics.UserCreated));
-                    cfg.Message<IDeliveryFailedIntegrationEvent>(m => m.SetEntityName(ServiceBusTopics.DeliveryFailed));
-                    cfg.Message<IPaymentApprovedIntegrationEvent>(m => m.SetEntityName(ServiceBusTopics.PaymentApproved));
-                    cfg.Message<IPurchaseRejectedIntegrationEvent>(m => m.SetEntityName(ServiceBusTopics.PurchaseRejected));
-                    cfg.Message<IGameCreatedIntegrationEvent>(m => m.SetEntityName(ServiceBusTopics.GameCreated));
-                    cfg.Message<IGameDeactiveIntegrationEvent>(m => m.SetEntityName(ServiceBusTopics.GameDeactivated));
-                    cfg.Message<IGameReactiveIntegrationEvent>(m => m.SetEntityName(ServiceBusTopics.GameReactivated));
-                    cfg.Message<IGameUserLibraryIntegrationEvent>(m => m.SetEntityName(ServiceBusTopics.GameUserLibrary));
-                    cfg.Message<IOrderPlacedIntegrationEvent>(m => m.SetEntityName(ServiceBusTopics.OrderPlaced));
+                    cfg.Message<IUserCreatedIntegrationEvent>(m => m.SetEntityName(Topics.UserCreated));
+                    cfg.Message<IDeliveryFailedIntegrationEvent>(m => m.SetEntityName(Topics.DeliveryFailed));
+                    cfg.Message<IPaymentApprovedIntegrationEvent>(m => m.SetEntityName(Topics.PaymentApproved));
+                    cfg.Message<IPurchaseRejectedIntegrationEvent>(m => m.SetEntityName(Topics.PurchaseRejected));
+                    cfg.Message<IGameCreatedIntegrationEvent>(m => m.SetEntityName(Topics.GameCreated));
+                    cfg.Message<IGameDeactiveIntegrationEvent>(m => m.SetEntityName(Topics.GameDeactivated));
+                    cfg.Message<IGameReactiveIntegrationEvent>(m => m.SetEntityName(Topics.GameReactivated));
+                    cfg.Message<IGameUserLibraryIntegrationEvent>(m => m.SetEntityName(Topics.GameUserLibrary));
+                    cfg.Message<IOrderPlacedIntegrationEvent>(m => m.SetEntityName(Topics.OrderPlaced));
 
                     cfg.ReceiveEndpoint(serviceBusConfig.GameCreatedIntegrationQueue, e =>
                     {
