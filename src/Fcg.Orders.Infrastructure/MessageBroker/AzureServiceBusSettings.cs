@@ -1,14 +1,16 @@
-﻿using Fcg.Core.WebApi.MessageBroker;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Fcg.Orders.Infrastructure.MessageBroker
 {
-    public class OrderServiceRabbitMqSettings : RabbitMqConnectionSettings
+    public class AzureServiceBusSettings
     {
-        [Required(ErrorMessage = "A fila de pagamento de pedido falhou é obrigatória.")]
-        public string OrderPaymentFailedQueue { get; set; } = string.Empty;
-        [Required(ErrorMessage = "A fila de pagamento de pedido bem-sucedido é obrigatória.")]
-        public string OrderPaymentSucceededQueue { get; set; } = string.Empty;
+        public const string SectionName = "AzureServiceBus";
+        [Required]
+        public string ConnectionString { get; init; } = string.Empty;
+        [Required(ErrorMessage = "A fila de compra de pedido falhou é obrigatória.")]
+        public string OrderPurchasedFailedQueue { get; set; } = string.Empty;
+        [Required(ErrorMessage = "A fila de compra de pedido bem-sucedido é obrigatória.")]
+        public string OrderPurchasedSucceededQueue { get; set; } = string.Empty;
         [Required(ErrorMessage = "A fila de integração de criação de jogo é obrigatória.")]
         public string GameCreatedIntegrationQueue { get; set; } = string.Empty;
         [Required(ErrorMessage = "A fila de integração de atualização de jogo é obrigatória.")]
