@@ -49,7 +49,7 @@ namespace Fcg.Orders.Application.IntegrationTests.Features.Commands.FinalizeOrde
             var uow = new Mock<IUnitOfWork>();
             uow.Setup(u => u.CommitAsync()).ReturnsAsync(true);
             var handler = new FinalizeSucessOrderCommandHandler(orderRepo, NullLogger<FinalizeSucessOrderCommandHandler>.Instance,
-                mediator.Object, customerRepo, gameRepo, publisher.Object, customerRepo, uow.Object);
+                mediator.Object, gameRepo, publisher.Object, customerRepo, uow.Object);
 
             await handler.Handle(new FinalizeSucessOrderCommand(Guid.NewGuid(), DateTime.UtcNow, order.Id, userId, new[] { game.GameId }),
                 CancellationToken.None);
