@@ -2,9 +2,9 @@ using Fcg.Core.Abstractions.Common.Exceptions;
 using Fcg.Core.Abstractions.Interfaces;
 using Fcg.Core.SharedContracts.Interfaces;
 using Fcg.Orders.Application.Features.Commands.PlaceOrder;
+using Fcg.Orders.Application.IntegrationTests.Fixtures;
 using Fcg.Orders.Application.ReadModels;
 using Fcg.Orders.Domain.Entities;
-using Fcg.Orders.Infrastructure.Persistence.Mongo;
 using Fcg.Orders.Infrastructure.Repositories;
 using FluentAssertions;
 using MediatR;
@@ -14,15 +14,17 @@ using Moq;
 
 namespace Fcg.Orders.Application.IntegrationTests.Features.Commands.PlaceOrder
 {
-    // Testes manuais contra um MongoDB real.
+    [Collection("Mongo")]
     public class PlaceOrderCommandHandlerMongoIntegrationTests
     {
-        private static IMongoDatabase CreateDatabase()
+        private readonly MongoFixture _fixture;
+
+        public PlaceOrderCommandHandlerMongoIntegrationTests(MongoFixture fixture)
         {
-            MongoConventions.EnsureRegistered();
-            var client = new MongoClient("mongodb://admin:TechChallenge%402026@localhost:27017/?directConnection=true&authSource=admin");
-            return client.GetDatabase($"fcg_orders_playtest_{Guid.NewGuid():N}");
+            _fixture = fixture;
         }
+
+        private IMongoDatabase CreateDatabase() => _fixture.CreateDatabase();
 
         private static PlaceOrderCommandHandler CreateHandler(
             OrderRepository orderRepo,
