@@ -78,8 +78,6 @@ namespace Fcg.Orders.Application.Features.Commands.FinalizeSucessOrder
             }
             else
             {
-                // Reentrega: o pedido já foi finalizado, mas o commit do outbox pode não ter acontecido.
-                // Republicar é seguro porque a UserLibrary ignora jogo que já está na biblioteca.
                 _logger.LogInformation("[OrderAPI] Pedido {OrderId} já está Completed. Republicando a entrega dos jogos.", order.Id);
             }
 
