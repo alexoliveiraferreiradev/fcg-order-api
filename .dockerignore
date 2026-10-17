@@ -1,11 +1,11 @@
-**/bin/
-**/obj/
-**/.vs/
+**/bin
+**/obj
+**/.vs
 **/*.user
-.git/
+.git
 .gitignore
-tests/
-k8s/
+tests
+k8s
 README.md
 Dockerfile
 .dockerignore
