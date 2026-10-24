@@ -24,7 +24,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "k8s", "k8s", "{10E81121-105
 		configmap.yaml = configmap.yaml
 		deployment.yaml = deployment.yaml
 		migration.yaml = migration.yaml
-		secrets.yaml = secrets.yaml
 		services.yaml = services.yaml
 	EndProjectSection
 EndProject

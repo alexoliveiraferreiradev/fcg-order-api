@@ -1,6 +1,7 @@
 ﻿using Fcg.Core.SharedContracts.Interfaces;
+using Fcg.Core.SharedContracts.MessageContracts;
+using Fcg.Core.SharedContracts.Messaging;
 using Fcg.Core.WebApi.MessageBroker;
-using Fcg.Orders.Application.Common.Interfaces;
 using Fcg.Orders.Infrastructure.Consumers;
 using Fcg.Orders.Infrastructure.Consumers.Filters;
 using Fcg.Orders.Infrastructure.MessageBroker;
@@ -18,7 +19,7 @@ namespace Fcg.Orders.Infrastructure.Extensions
         {
             services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
 
-            services.AddOptions<OrderServiceRabbitMqSettings>().BindConfiguration(RabbitMqConnectionSettings.SectionName)
+            services.AddOptions<AzureServiceBusSettings>().BindConfiguration(AzureServiceBusSettings.SectionName)
             .ValidateDataAnnotations().ValidateOnStart();
 
             services.AddMassTransit(x =>
@@ -29,57 +30,66 @@ namespace Fcg.Orders.Infrastructure.Extensions
                     o.UseSqlServer();
                     o.UseBusOutbox();
                 });
-                x.UsingRabbitMq((context, cfg) =>
-                {
-                    var rabbitMqConfig = context.GetRequiredService<IOptions<OrderServiceRabbitMqSettings>>().Value;
 
-                    cfg.Host(rabbitMqConfig.Host, rabbitMqConfig.Port, "/", h =>
-                    {
-                        h.Username(rabbitMqConfig.Username);
-                        h.Password(rabbitMqConfig.Password);
-                    });
+                x.UsingAzureServiceBus((context, cfg) =>
+                {
+                    var serviceBusConfig = context.GetRequiredService<IOptions<AzureServiceBusSettings>>().Value;
+                    cfg.Host(serviceBusConfig.ConnectionString);
 
                     cfg.UseConsumeFilter(typeof(LoggingConsumeFilter<>), context);
 
                     cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)).Ignore<FluentValidation.ValidationException>());
 
-                    cfg.ReceiveEndpoint(rabbitMqConfig.GameCreatedIntegrationQueue, e =>
+                    cfg.Message<IUserCreatedIntegrationEvent>(m => m.SetEntityName(Topics.UserCreated));
+                    cfg.Message<IDeliveryFailedIntegrationEvent>(m => m.SetEntityName(Topics.DeliveryFailed));
+                    cfg.Message<IPaymentApprovedIntegrationEvent>(m => m.SetEntityName(Topics.PaymentApproved));
+                    cfg.Message<IPurchaseRejectedIntegrationEvent>(m => m.SetEntityName(Topics.PurchaseRejected));
+                    cfg.Message<IGameCreatedIntegrationEvent>(m => m.SetEntityName(Topics.GameCreated));
+                    cfg.Message<IGameDeactiveIntegrationEvent>(m => m.SetEntityName(Topics.GameDeactivated));
+                    cfg.Message<IGameReactiveIntegrationEvent>(m => m.SetEntityName(Topics.GameReactivated));
+                    cfg.Message<IGameUserLibraryIntegrationEvent>(m => m.SetEntityName(Topics.GameUserLibrary));
+                    cfg.Message<IOrderPlacedIntegrationEvent>(m => m.SetEntityName(Topics.OrderPlaced));
+
+                    cfg.ReceiveEndpoint(serviceBusConfig.GameCreatedIntegrationQueue, e =>
                     {
                         e.UseEntityFrameworkOutbox<OrderDbContext>(context);
                         e.ConfigureConsumer<GameCreatedConsumer>(context);
                     });
 
-                    cfg.ReceiveEndpoint(rabbitMqConfig.GameDeactiveIntegrationQueue, e =>
+                    cfg.ReceiveEndpoint(serviceBusConfig.GameDeactiveIntegrationQueue, e =>
                     {
                         e.UseEntityFrameworkOutbox<OrderDbContext>(context);
                         e.ConfigureConsumer<GameDeactiveConsumer>(context);
                     });
 
-                    cfg.ReceiveEndpoint(rabbitMqConfig.RegisterUserIntegrationQueue, e =>
+                    cfg.ReceiveEndpoint(serviceBusConfig.RegisterUserIntegrationQueue, e =>
                     {
                         e.UseEntityFrameworkOutbox<OrderDbContext>(context);
-                        e.ConfigureConsumer<RegisteredUserConsumer>(context);   
+                        e.ConfigureConsumer<RegisteredUserConsumer>(context);
                     });
 
-                    cfg.ReceiveEndpoint(rabbitMqConfig.GameReactiveIntegrationQueue, e =>
+                    cfg.ReceiveEndpoint(serviceBusConfig.GameReactiveIntegrationQueue, e =>
                     {
                         e.UseEntityFrameworkOutbox<OrderDbContext>(context);
                         e.ConfigureConsumer<GameReactiveConsumer>(context);
                     });
 
-                    cfg.ReceiveEndpoint(rabbitMqConfig.OrderPaymentFailedQueue, e =>
+                    cfg.ReceiveEndpoint(serviceBusConfig.OrderPurchasedFailedQueue, e =>
                     {
                         e.UseEntityFrameworkOutbox<OrderDbContext>(context);
-                        e.ConfigureConsumer<PaymentFailedEventConsumer>(context);
+                        e.ConfigureConsumer<PurchasedRejectEventConsumer>(context);
                     });
 
-                    cfg.ReceiveEndpoint(rabbitMqConfig.OrderPaymentSucceededQueue, e =>
+                    cfg.ReceiveEndpoint(serviceBusConfig.OrderPurchasedSucceededQueue, e =>
                     {
                         e.UseEntityFrameworkOutbox<OrderDbContext>(context);
-                        e.ConfigureConsumer<PaymentProcessedEventConsumer>(context);
+                        e.ConfigureConsumer<PaymentApprovedEventConsumer>(context);
                     });
 
                 });
+
+
+               
             });
 
             return services;

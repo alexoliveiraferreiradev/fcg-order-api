@@ -6,21 +6,21 @@ using Microsoft.Extensions.Logging;
 
 namespace Fcg.Orders.Infrastructure.Consumers
 {
-    public class PaymentProcessedEventConsumer : IConsumer<IPaymentProcessedIntegrationEvent>
+    public class PaymentApprovedEventConsumer : IConsumer<IPaymentApprovedIntegrationEvent>
     {
         private readonly ISender _sender;
-        private readonly ILogger<PaymentProcessedEventConsumer> _logger;
+        private readonly ILogger<PaymentApprovedEventConsumer> _logger;
 
-        public PaymentProcessedEventConsumer(ISender sender, ILogger<PaymentProcessedEventConsumer> logger)
+        public PaymentApprovedEventConsumer(ISender sender, ILogger<PaymentApprovedEventConsumer> logger)
         {
             _sender = sender;
             _logger = logger;
         }
 
-        public async Task Consume(ConsumeContext<IPaymentProcessedIntegrationEvent> context)
+        public async Task Consume(ConsumeContext<IPaymentApprovedIntegrationEvent> context)
         {
             var order = context.Message;
-            _logger.LogInformation("[OrderAPI] PaymentProcessedEvent recebido para o Pedido {OrderId}", order.OrderId);
+            _logger.LogInformation("[OrderAPI] PaymentApprovedEvent recebido para o Pedido {OrderId}", order.OrderId);
             var finalizeCommand = new FinalizeSucessOrderCommand(order.EventId,order.CreatedAt,
                 order.OrderId, order.UserId, order.GameIds);
             await _sender.Send(finalizeCommand, context.CancellationToken);

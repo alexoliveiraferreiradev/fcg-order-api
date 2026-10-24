@@ -5,9 +5,11 @@ EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
-
-
 WORKDIR /src
+
+
+RUN dotnet tool install --global dotnet-ef --version 9.0.18
+ENV PATH="$PATH:/root/.dotnet/tools"
 
 COPY ["src/Fcg.Orders.API/Fcg.Orders.API.csproj", "Fcg.Orders.API/"]
 COPY ["src/Fcg.Orders.Application/Fcg.Orders.Application.csproj", "Fcg.Orders.Application/"]
@@ -18,26 +20,15 @@ RUN dotnet restore "./Fcg.Orders.API/Fcg.Orders.API.csproj"
 
 COPY src/ .
 WORKDIR "/src/Fcg.Orders.API"
-RUN dotnet build "./Fcg.Orders.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-RUN dotnet tool install --global dotnet-ef
-ENV PATH="$PATH:/root/.dotnet/tools"
-
-RUN dotnet ef migrations bundle --self-contained -r linux-x64 -o /app/build/efbundle
-
-FROM build AS publish
+# Sem --no-restore: o publish refaz o restore no Linux e não depende de nenhum obj/ que venha no contexto.
 RUN dotnet publish "./Fcg.Orders.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
-
+RUN dotnet ef migrations bundle --no-build --configuration $BUILD_CONFIGURATION --self-contained -r linux-x64 -o /app/efbundle
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
-
-USER root
-
-COPY --from=build /app/build/efbundle ./efbundle
-RUN chmod +x ./efbundle
-USER app
+COPY --from=build /app/publish .
+COPY --from=build /app/efbundle ./efbundle
 
 ENTRYPOINT []
 CMD ["dotnet", "Fcg.Orders.API.dll"]
