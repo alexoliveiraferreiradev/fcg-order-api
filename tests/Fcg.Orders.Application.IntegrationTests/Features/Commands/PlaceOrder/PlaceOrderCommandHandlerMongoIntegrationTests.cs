@@ -44,9 +44,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Features.Commands.PlaceOrder
                 unitOfWorkMock.Object);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task Handle_ShouldPersistOrderInMongo_WhenSimulatingRealUserPurchase()
         {
+            _fixture.SkipIfUnavailable();
+
             var database = CreateDatabase();
             var gameRepo = new GameSnapshotRepository(database);
             var customerRepo = new CustomerRepository(database);
@@ -76,9 +78,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Features.Commands.PlaceOrder
             persistedOrder.TotalAmount.Amount.Should().Be(99.80m);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task Handle_ShouldRejectSecondPurchase_WhenUserAlreadyOwnsCompletedGame()
         {
+            _fixture.SkipIfUnavailable();
+
             var database = CreateDatabase();
             var gameRepo = new GameSnapshotRepository(database);
             var customerRepo = new CustomerRepository(database);
