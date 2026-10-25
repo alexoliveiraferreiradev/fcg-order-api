@@ -47,14 +47,15 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     env:
       IMAGE: ${{ vars.ACR_REGISTRY_NAME }}.azurecr.io/fcg-order-api:${{ github.sha }}
+      NAMESPACE: default
+      DEPLOYMENT: fcg-orders-api-deployment
+      MIGRATION_JOB: fcg-order-db-migration
     steps:
       - uses: actions/checkout@v4
 
       - name: Build Docker Image
         run: docker build --pull -t $IMAGE .   # --pull: base sempre atualizada, sem cache velho
 
-      # Barra o push se a imagem tiver CVE HIGH/CRITICAL com correção disponível.
-      # 0.35.0 é release imutável (posterior ao comprometimento das tags do trivy-action em 03/2026).
       - name: Scan Docker Image (Trivy)
         uses: aquasecurity/trivy-action@0.35.0
         with:
@@ -77,3 +78,47 @@ jobs:
 
       - name: Push Docker Image to ACR
         run: docker push $IMAGE
+      
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ vars.AKS_CLUSTER_NAME }} 
+
+      - name: Apply ConfigMap
+        run: kubectl apply -n "$NAMESPACE" -f k8s/order-configmap.yaml
+      
+      - name: Run DB migration
+        run: |
+          kubectl delete job "$MIGRATION_JOB" -n "$NAMESPACE" --ignore-not-found --wait=true
+          yq '.spec.template.spec.containers[0].image = strenv(IMAGE)' k8s/order-migration.yaml \
+            | kubectl apply -n "$NAMESPACE" -f -
+          
+          for i in $(seq 1 95); do
+            status=$(kubectl get job "$MIGRATION_JOB" -n "$NAMESPACE" \
+              -o jsonpath='{.status.conditions[?(@.status=="True")].type}')
+            case "$status" in
+              *Complete*) echo "Migração concluída"; exit 0 ;;
+              *Failed*)
+                kubectl logs job/"$MIGRATION_JOB" -n "$NAMESPACE" --all-containers --tail=200
+                exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "Migração não terminou a tempo"; exit 1  
+
+      - name: Deploy to AKS
+        run: |
+          yq '(select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = strenv(IMAGE)' k8s/order.yaml \
+            | kubectl apply -n "$NAMESPACE" -f -
+          kubectl annotate deployment/"$DEPLOYMENT" -n "$NAMESPACE" \
+            kubernetes.io/change-cause="fcg-order-api ${{ github.sha }}" --overwrite
+          if ! kubectl rollout status deployment/"$DEPLOYMENT" -n "$NAMESPACE" --timeout=5m; then
+            echo "Rollout falhou, desfazendo"
+            kubectl rollout undo deployment/"$DEPLOYMENT" -n "$NAMESPACE"
+            kubectl rollout status deployment/"$DEPLOYMENT" -n "$NAMESPACE" --timeout=5m
+            exit 1
+          fi      
+        
+        
+     
