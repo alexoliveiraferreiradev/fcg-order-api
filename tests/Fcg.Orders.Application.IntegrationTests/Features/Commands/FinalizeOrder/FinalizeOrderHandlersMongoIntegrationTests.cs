@@ -28,9 +28,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Features.Commands.FinalizeOrde
 
         public FinalizeOrderHandlersMongoIntegrationTests(MongoFixture fixture) => _fixture = fixture;
 
-        [Fact]
+        [SkippableFact]
         public async Task FinalizeSuccess_PendingOrder_CompletesOrderInMongoAndPublishesEvents()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var orderRepo = new OrderRepository(db);
             var gameRepo = new GameSnapshotRepository(db);
@@ -63,9 +65,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Features.Commands.FinalizeOrde
             (await orderRepo.CustomerOwnsGameAsync(userId, game.GameId, CancellationToken.None)).Should().BeTrue();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task FinalizeFailed_PendingOrder_CancelsOrderInMongo()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var orderRepo = new OrderRepository(db);
             var order = new Order(new OrderCustomer(Guid.NewGuid(), "Maria", "maria@fcg.com"));
@@ -81,9 +85,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Features.Commands.FinalizeOrde
             mediator.Verify(m => m.Publish(It.IsAny<OrderEvent>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GameCreated_NewThenExistingGame_InsertsThenUpdatesSnapshot()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var gameRepo = new GameSnapshotRepository(db);
             var handler = new GameCreatedCommandHandler(gameRepo, NullLogger<GameCreatedCommandHandler>.Instance);
@@ -102,9 +108,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Features.Commands.FinalizeOrde
             updated.IsAvailableForPurchase.Should().BeFalse();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetOrderHistory_CompletedAndDraftOrders_MapsPaidPriceByStatus()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var orderRepo = new OrderRepository(db);
             var userId = Guid.NewGuid();

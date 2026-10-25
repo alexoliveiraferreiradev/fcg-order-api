@@ -23,9 +23,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             return order;
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AddOrder_GetOrderById_RoundTripPreservesAllFields()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var repo = new OrderRepository(db);
             var g1 = Guid.NewGuid(); var g2 = Guid.NewGuid();
@@ -50,9 +52,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             loaded.UpdatedAt.Kind.Should().Be(DateTimeKind.Utc);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AddOrder_StoredDocument_UsesExpectedBsonRepresentations()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var repo = new OrderRepository(db);
             var gameId = Guid.NewGuid();
@@ -72,9 +76,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             raw["status"].AsInt32.Should().Be((int)OrderStatus.Draft);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetOrderById_UnknownId_ReturnsNull()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new OrderRepository(_fixture.CreateDatabase());
 
             var loaded = await repo.GetOrderById(Guid.NewGuid(), CancellationToken.None);
@@ -82,9 +88,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             loaded.Should().BeNull();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task UpdateOrder_AfterFinalize_PersistsNewStatusAndTotal()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new OrderRepository(_fixture.CreateDatabase());
             var order = NewOrder(null, (Guid.NewGuid(), "Jogo A", 15m));
             await repo.AddOrder(order);
@@ -100,9 +108,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             reloaded.Games.Should().HaveCount(1);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task UpdateOrder_AfterCancel_PersistsCancelledStatus()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new OrderRepository(_fixture.CreateDatabase());
             var order = NewOrder(null, (Guid.NewGuid(), "Jogo A", 15m));
             await repo.AddOrder(order);
@@ -114,9 +124,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             reloaded.Status.Should().Be(OrderStatus.Cancelled);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task UpdateOrder_OrderNotPersisted_ReturnsFalse()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new OrderRepository(_fixture.CreateDatabase());
 
             var result = await repo.UpdateOrder(NewOrder(null, (Guid.NewGuid(), "Jogo A", 1m)));
@@ -124,9 +136,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             result.Should().BeFalse();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task CustomerOwnsGameAsync_CompletedOrderWithGame_ReturnsTrue()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new OrderRepository(_fixture.CreateDatabase());
             var customer = Guid.NewGuid(); var game = Guid.NewGuid();
             var order = NewOrder(customer, (game, "Jogo A", 10m));
@@ -138,11 +152,13 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             owns.Should().BeTrue();
         }
 
-        [Theory]
+        [SkippableTheory]
         [InlineData(OrderStatus.Draft)]
         [InlineData(OrderStatus.Cancelled)]
         public async Task CustomerOwnsGameAsync_OrderNotCompleted_ReturnsFalse(OrderStatus status)
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new OrderRepository(_fixture.CreateDatabase());
             var customer = Guid.NewGuid(); var game = Guid.NewGuid();
             var order = NewOrder(customer, (game, "Jogo A", 10m));
@@ -154,9 +170,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             owns.Should().BeFalse();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task CustomerOwnsGameAsync_OtherCustomerOrOtherGame_ReturnsFalse()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new OrderRepository(_fixture.CreateDatabase());
             var customer = Guid.NewGuid(); var game = Guid.NewGuid();
             var order = NewOrder(customer, (game, "Jogo A", 10m));

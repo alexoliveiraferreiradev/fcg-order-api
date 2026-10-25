@@ -31,7 +31,8 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
       - name: c-fcg-order-api
-        image: alexoliverdev/fcg-order-api:1.1.9
+        image: acrfiapcloudgames.azurecr.io/fcg-order-api:1.2
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         resources:
@@ -60,13 +61,13 @@ spec:
           - name: MongoDatabaseSettings__Username    
             valueFrom:
               secretKeyRef:
-                name: order-opaque
+                name: fcg-secrets
                 key: MONGO_USER
           - name: MongoDatabaseSettings__Password    
             valueFrom:
               secretKeyRef:
-                name: order-opaque
-                key: MONGO_PASS
+                name: fcg-secrets
+                key: MONGO_PASSWORD
           - name: DatabaseSettings__Host
             valueFrom:
               configMapKeyRef:
@@ -85,63 +86,53 @@ spec:
           - name: DatabaseSettings__Username
             valueFrom:
               secretKeyRef:
-                name: order-opaque
+                name: fcg-secrets
                 key: DB_USER
           - name: DatabaseSettings__Password
             valueFrom:
               secretKeyRef:
-                name: order-opaque
+                name: fcg-secrets
                 key: DB_PASS
           - name: ASPNETCORE_ENVIRONMENT
             valueFrom:
               configMapKeyRef:
                 name: order-config
                 key: ENVIRONMENT
-          - name: RabbitMqSettings__Host
-            valueFrom:
-              configMapKeyRef:
-                name: order-config
-                key: RABBITMQ_SERVER
-          - name: RabbitMqSettings__Port
-            valueFrom:
-              configMapKeyRef:
-                name: order-config
-                key: RABBITMQ_PORT
-          - name: RabbitMqSettings__Username
+          - name: AzureServiceBus__ConnectionString
             valueFrom:
               secretKeyRef:
-                name: order-opaque
-                key: RABBITMQ_USER
-          - name: RabbitMqSettings__Password
-            valueFrom:
-              secretKeyRef:
-                name: order-opaque
-                key: RABBITMQ_PASS
-          - name: RabbitMqSettings__OrderPaymentFailedQueue
+                name: fcg-secrets
+                key: ServiceBus_Connection          
+          - name: AzureServiceBus__OrderPurchasedFailedQueue
             valueFrom:
               configMapKeyRef:
                 name: order-config
                 key: ORDER_PAYMENT_FAILED_QUEUE
-          - name: RabbitMqSettings__OrderPaymentSucceededQueue
+          - name: AzureServiceBus__OrderPurchasedSucceededQueue
             valueFrom:
               configMapKeyRef:
                 name: order-config
                 key: ORDER_PAYMENT_SUCCEEDED_QUEUE
-          - name: RabbitMqSettings__GameCreatedIntegrationQueue
+          - name: AzureServiceBus__GameCreatedIntegrationQueue
             valueFrom:
               configMapKeyRef:
                 name: order-config
                 key: ORDER_GAME_CREATED_INTEGRATION_QUEUE
-          - name: RabbitMqSettings__GameDeactiveIntegrationQueue
+          - name: AzureServiceBus__GameDeactiveIntegrationQueue
             valueFrom:
               configMapKeyRef:
                 name: order-config
                 key: GAME_DEACTIVE_INTEGRATION_QUEUE
-          - name: RabbitMqSettings__GameReactiveIntegrationQueue
+          - name: AzureServiceBus__GameReactiveIntegrationQueue
             valueFrom:
               configMapKeyRef:
                 name: order-config
                 key: GAME_REACTIVE_INTEGRATION_QUEUE
+          - name: AzureServiceBus__RegisterUserIntegrationQueue
+            valueFrom:
+              configMapKeyRef:
+                name: order-config
+                key: REGISTER_USER_INTEGRATION_QUEUE
           - name: RedisSettings__Host
             valueFrom:
               configMapKeyRef:
@@ -160,8 +151,8 @@ spec:
           - name: RedisSettings__Password
             valueFrom:
               secretKeyRef:
-                name: order-opaque
-                key: REDIS_PASS
+                name: fcg-secrets
+                key: REDIS_PASSWORD
           - name: JwtSettings__Issuer
             valueFrom:
               configMapKeyRef:
@@ -175,8 +166,12 @@ spec:
           - name: JwtSettings__Secret
             valueFrom:
               secretKeyRef:
-                name: order-opaque
+                name: fcg-secrets
                 key: JWT_SECRET
+        volumeMounts:
+          - name: secrets-store
+            mountPath: /mnt/secrets
+            readOnly: true
         livenessProbe:
           httpGet:
             path: /health/liveness
@@ -189,6 +184,14 @@ spec:
             port: 8080
           initialDelaySeconds: 15
           periodSeconds: 5
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: fcg-kv
+        
 ---
 apiVersion: v1
 kind: Service

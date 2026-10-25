@@ -23,9 +23,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             return order;
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetOrderHistoryByUserIdAsync_FiltersByUserAndSortsByCreatedAtDescending()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var repo = new OrderRepository(db);
             var query = new OrderQueryRepository(db);
@@ -41,9 +43,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             result.Items.Select(o => o.Id).Should().Equal(third.Id, second.Id, first.Id);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetOrderHistoryByUserIdAsync_Pagination_ReturnsRequestedPage()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var repo = new OrderRepository(db);
             var query = new OrderQueryRepository(db);
@@ -58,11 +62,13 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             page2.Items.Select(o => o.Id).Should().Equal(o1.Id);
         }
 
-        [Theory]
+        [SkippableTheory]
         [InlineData(0, 0)]
         [InlineData(-3, -5)]
         public async Task GetOrderHistoryByUserIdAsync_InvalidPageOrSize_IsClamped(int page, int size)
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var repo = new OrderRepository(db);
             var query = new OrderQueryRepository(db);
@@ -76,9 +82,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             result.TotalItems.Should().Be(2);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetOrderHistoryByUserIdAsync_PageSizeAboveMax_IsClampedToMax()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var repo = new OrderRepository(db);
             var query = new OrderQueryRepository(db);
@@ -92,9 +100,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             result.TotalItems.Should().Be(OrderQueryRepository.MaxPageSize + 5);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetOrderHistoryByUserIdAsync_UserWithoutOrders_ReturnsEmpty()
         {
+            _fixture.SkipIfUnavailable();
+
             var query = new OrderQueryRepository(_fixture.CreateDatabase());
 
             var result = await query.GetOrderHistoryByUserIdAsync(Guid.NewGuid(), 1, 10, CancellationToken.None);

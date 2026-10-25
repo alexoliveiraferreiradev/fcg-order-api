@@ -14,9 +14,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
 
         public CustomerRepositoryTests(MongoFixture fixture) => _fixture = fixture;
 
-        [Fact]
+        [SkippableFact]
         public async Task AddCustomer_GetCustomerByIdAsync_RoundTripPreservesAllFields()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var repo = new CustomerRepository(db);
             var id = Guid.NewGuid();
@@ -33,17 +35,21 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             raw["_id"].BsonType.Should().Be(BsonType.String);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetCustomerByIdAsync_UnknownId_ReturnsNull()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new CustomerRepository(_fixture.CreateDatabase());
 
             (await repo.GetCustomerByIdAsync(Guid.NewGuid(), CancellationToken.None)).Should().BeNull();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AddCustomer_DuplicateId_ThrowsMongoWriteException()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new CustomerRepository(_fixture.CreateDatabase());
             var id = Guid.NewGuid();
             await repo.AddCustomer(new CustomerSnapshot(id, "Maria", "maria@fcg.com"));

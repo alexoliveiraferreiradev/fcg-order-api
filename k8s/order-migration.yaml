@@ -42,7 +42,8 @@ spec:
             memory: "32Mi"
       containers:
       - name: migration-order-runner
-        image: alexoliverdev/fcg-order-api:1.1.9
+        image: acrfiapcloudgames.azurecr.io/fcg-order-api:1.2
+        imagePullPolicy: Always
         command: ["./efbundle"]
         resources:
           requests:
@@ -70,10 +71,22 @@ spec:
           - name: DatabaseSettings__Username
             valueFrom:
               secretKeyRef:
-                name: order-opaque
+                name: fcg-secrets
                 key: DB_USER
           - name: DatabaseSettings__Password
             valueFrom:
               secretKeyRef:
-                name: order-opaque
+                name: fcg-secrets
                 key: DB_PASS
+        volumeMounts:
+          - name: secrets-store
+            mountPath: /mnt/secrets
+            readOnly: true
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: fcg-kv
+         

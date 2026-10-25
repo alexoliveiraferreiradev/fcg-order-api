@@ -17,9 +17,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
         private static GameSnapshot NewGame(string name = "The Witcher 3", decimal price = 59.90m) =>
             new(Guid.NewGuid(), name, "Descricao do jogo", "RPG", price, DateTime.UtcNow);
 
-        [Fact]
+        [SkippableFact]
         public async Task AddSnapshot_GetByIdAsync_RoundTripPreservesAllFields()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var repo = new GameSnapshotRepository(db);
             var game = NewGame();
@@ -37,9 +39,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             loaded.LastSyncedAt.Kind.Should().Be(DateTimeKind.Utc);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AddSnapshot_StoredDocument_UsesIdAsStringAndPriceAsDecimal128()
         {
+            _fixture.SkipIfUnavailable();
+
             var db = _fixture.CreateDatabase();
             var repo = new GameSnapshotRepository(db);
             var game = NewGame();
@@ -52,17 +56,21 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             raw["currentPrice"].BsonType.Should().Be(BsonType.Decimal128);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetByIdAsync_UnknownId_ReturnsNull()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new GameSnapshotRepository(_fixture.CreateDatabase());
 
             (await repo.GetByIdAsync(Guid.NewGuid(), CancellationToken.None)).Should().BeNull();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetAllByIdsAsync_SubsetOfIds_ReturnsOnlyMatching()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new GameSnapshotRepository(_fixture.CreateDatabase());
             var a = NewGame("Jogo A"); var b = NewGame("Jogo B"); var c = NewGame("Jogo C");
             await repo.AddSnapshot(a); await repo.AddSnapshot(b); await repo.AddSnapshot(c);
@@ -72,9 +80,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             result.Select(x => x.GameId).Should().BeEquivalentTo(new[] { a.GameId, c.GameId });
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetAllByIdsAsync_EmptyInput_ReturnsEmpty()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new GameSnapshotRepository(_fixture.CreateDatabase());
             await repo.AddSnapshot(NewGame());
 
@@ -83,9 +93,11 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             result.Should().BeEmpty();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task UpdateSnapshot_ChangedGame_PersistsChanges()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new GameSnapshotRepository(_fixture.CreateDatabase());
             var game = NewGame();
             await repo.AddSnapshot(game);
@@ -101,17 +113,21 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             loaded.IsAvailableForPurchase.Should().BeFalse();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task UpdateSnapshot_NotPersisted_ReturnsFalse()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new GameSnapshotRepository(_fixture.CreateDatabase());
 
             (await repo.UpdateSnapshot(NewGame())).Should().BeFalse();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task DeleteSnapshot_ExistingGame_RemovesIt()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new GameSnapshotRepository(_fixture.CreateDatabase());
             var game = NewGame();
             await repo.AddSnapshot(game);
@@ -122,17 +138,21 @@ namespace Fcg.Orders.Application.IntegrationTests.Infrastructure
             (await repo.GetByIdAsync(game.GameId, CancellationToken.None)).Should().BeNull();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task DeleteSnapshot_NotPersisted_ReturnsFalse()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new GameSnapshotRepository(_fixture.CreateDatabase());
 
             (await repo.DeleteSnapshot(NewGame())).Should().BeFalse();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task AddSnapshot_DuplicateId_ThrowsMongoWriteException()
         {
+            _fixture.SkipIfUnavailable();
+
             var repo = new GameSnapshotRepository(_fixture.CreateDatabase());
             var game = NewGame();
             await repo.AddSnapshot(game);
