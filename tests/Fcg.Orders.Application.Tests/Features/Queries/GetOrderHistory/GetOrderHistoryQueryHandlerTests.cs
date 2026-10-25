@@ -70,7 +70,7 @@ namespace Fcg.Orders.Application.Tests.Features.Queries.GetOrderHistory
             var result = await handler.Handle(query, CancellationToken.None);
 
             result.Should().BeEquivalentTo(pagedResultHistory);
-            _cacheServiceMock.Verify(c => c.SetAsync(It.IsAny<string>(), pagedResult, It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
+            _cacheServiceMock.Verify(c => c.SetAsync(It.IsAny<string>(), result, It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
