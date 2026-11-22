@@ -8,7 +8,9 @@ A Order API é o **orquestrador do fluxo de compra**: ela inicia a transação, 
 
 ## 🔄 Fluxo de Eventos e Responsabilidades
 
-A comunicação com os demais microsserviços é assíncrona, via **RabbitMQ** (abstraído pelo **MassTransit**). O serviço possui tanto endpoints HTTP quanto *consumers* de eventos.
+A comunicação com os demais microsserviços é assíncrona, via **Azure Service Bus** (tópicos e subscriptions, abstraído pelo **MassTransit** com `UsingAzureServiceBus`). O serviço possui tanto endpoints HTTP quanto *consumers* de eventos.
+
+Cada contrato é publicado em um **tópico com nome fixo** (`SetEntityName` com as constantes da classe `Topics` do `Fcg.Core.SharedContracts`). Cada *consumer* tem a sua própria **fila** (`ReceiveEndpoint`), e o MassTransit cria a *subscription* que encaminha as mensagens do tópico para essa fila. Todos os *receive endpoints* usam o **Inbox/Outbox do EF Core** (`UseEntityFrameworkOutbox<OrderDbContext>`), o filtro `LoggingConsumeFilter` e retry de 3 tentativas com intervalo de 5 segundos (exceto `ValidationException`, que vai direto para a fila de erro).
 
 ```mermaid
 sequenceDiagram
@@ -23,33 +25,36 @@ sequenceDiagram
     O-->>P: Publica OrderPlacedEvent
 
     alt Pagamento aprovado
-        P-->>O: PaymentProcessedEvent
+        P-->>O: PaymentApprovedEvent
         O->>O: Finaliza o pedido (status Completed)
         O-->>L: Publica GameUserLibraryEvent
         Note right of L: Jogo liberado na biblioteca
     else Pagamento recusado
-        P-->>O: PaymentFailedEvent
+        P-->>O: PurchaseRejectedEvent
         O->>O: Cancela o pedido (status Cancelled)
     end
 ```
 
 ### 📥 Eventos Consumidos
 
-| Evento | Origem | O que faz |
-| :--- | :--- | :--- |
-| `IPaymentProcessedIntegrationEvent` | Payments API | Finaliza o pedido e libera os jogos na biblioteca do usuário. |
-| `IPaymentFailedIntegrationEvent` | Payments API | Cancela o pedido, encerrando o fluxo de compra. |
-| `IGameCreatedIntegrationEvent` | Catalog API | Cria o *snapshot* local do jogo (nome, descrição, gênero, preço). |
-| `IGameDeactiveIntegrationEvent` | Catalog API | Marca o jogo como indisponível para novas compras. |
-| `IGameReactiveIntegrationEvent` | Catalog API | Devolve o jogo à disponibilidade. |
+| Evento | Tópico | Fila (configuração `AzureServiceBus:*`) | Origem | O que faz |
+| :--- | :--- | :--- | :--- | :--- |
+| `IPaymentApprovedIntegrationEvent` | `payment-approved` | `order-payment-succeeded-queue` (`OrderPurchasedSucceededQueue`) | Payments API | Finaliza o pedido e libera os jogos na biblioteca do usuário (`PaymentApprovedEventConsumer`). |
+| `IPurchaseRejectedIntegrationEvent` | `purchase-rejected` | `order-payment-failed-queue` (`OrderPurchasedFailedQueue`) | Payments API | Cancela o pedido, encerrando o fluxo de compra (`PurchasedRejectEventConsumer`). |
+| `IGameCreatedIntegrationEvent` | `game-created` | `order-game-created-integration-queue` (`GameCreatedIntegrationQueue`) | Catalog API | Cria o *snapshot* local do jogo (nome, descrição, gênero, preço). |
+| `IGameDeactiveIntegrationEvent` | `game-deactivated` | `order-game-deactive-integration-queue` (`GameDeactiveIntegrationQueue`) | Catalog API | Marca o jogo como indisponível para novas compras. |
+| `IGameReactiveIntegrationEvent` | `game-reactivated` | `order-game-reactive-integration-queue` (`GameReactiveIntegrationQueue`) | Catalog API | Devolve o jogo à disponibilidade. |
+| `IUserCreatedIntegrationEvent` | `user-created` | `order-game-register-user-integration-queue` (`RegisterUserIntegrationQueue`) | Users API | Cria o *snapshot* local do cliente (`CustomerSnapshot`) usado no pedido (`RegisteredUserConsumer`). |
+
+> Os nomes de fila acima são os do `k8s/order-configmap.yaml`; em outros ambientes, defina-os nas variáveis `AzureServiceBus__*`.
 
 ### 📤 Eventos Publicados
 
-| Evento | Destino | Quando |
-| :--- | :--- | :--- |
-| `IOrderPlacedIntegrationEvent` | Payments API | Ao criar o pedido, solicitando o processamento do pagamento. |
-| `IGameUserLibraryIntegrationEvent` | User Library API | Após o pagamento aprovado, para liberar cada jogo na biblioteca. |
-| `IDeliveryFailedIntegrationEvent` | Payments API | Se a finalização do pedido falhar, para acionar o **estorno**. |
+| Evento | Tópico | Destino | Quando |
+| :--- | :--- | :--- | :--- |
+| `IOrderPlacedIntegrationEvent` | `order-placed` | Payments API | Ao criar o pedido, solicitando o processamento do pagamento. |
+| `IGameUserLibraryIntegrationEvent` | `game-user-library` | User Library API | Após o pagamento aprovado, para liberar cada jogo na biblioteca. |
+| `IDeliveryFailedIntegrationEvent` | `delivery-failed` | Payments API | Se a finalização do pedido falhar, para acionar o **estorno**. |
 
 > [!IMPORTANT]
 > **Compensação transacional (padrão Saga):** o pagamento é confirmado *antes* da entrega dos jogos. Se a finalização do pedido falhar depois disso, o cliente teria sido cobrado sem receber o produto. Para cobrir esse intervalo, o `FinalizeSucessOrderCommandHandler` captura a exceção e publica `IDeliveryFailedIntegrationEvent`, que faz a *Payments API* localizar a transação aprovada e registrar o reembolso.
@@ -98,7 +103,7 @@ Além das métricas HTTP padrão, há uma métrica de negócio customizada:
 - **MongoDB (MongoDB.Driver)**: Banco de dados principal do domínio — armazena o agregado `Order`, `GameSnapshot` e `CustomerSnapshot`, tanto na escrita quanto na leitura (histórico paginado). Coleções e índices são criados automaticamente na subida da aplicação, sem migrations.
 - **Entity Framework Core 9.0 + SQL Server**: não guarda dados de domínio; é usado exclusivamente pelo **Transactional Outbox/Inbox do MassTransit**, garantindo que a gravação do pedido e a publicação do evento de integração fiquem consistentes mesmo em caso de falha.
 - **MediatR (v14)**: Implementação do padrão Mediator para desacoplamento e gerenciamento de comandos internos.
-- **MassTransit**: Framework de mensageria que abstrai a comunicação com o **RabbitMQ**, com outbox baseado em EF Core, filtro de log de consumo e política de retry por endpoint.
+- **MassTransit & Azure Service Bus**: Framework de mensageria que abstrai a comunicação com o **Azure Service Bus** (tópicos, subscriptions e filas por *consumer*), com outbox baseado em EF Core, filtro de log de consumo e política de retry.
 - **Redis (StackExchange)**: Cache distribuído das consultas de histórico de pedidos.
 - **Prometheus (prometheus-net.AspNetCore)**: Exposição de métricas HTTP e de negócio no formato Prometheus.
 - **FluentValidation**: Validação declarativa dos comandos de entrada.
@@ -154,14 +159,14 @@ Ao rodar localmente, preencha o `appsettings.json`:
     "Host": "localhost", "Port": "1433", "DatabaseName": "Fcg_Orders",
     "Username": "sa", "Password": "SuaSenhaSegura"
   },
-  "RabbitMqSettings": {
-    "Host": "localhost", "Port": "5672",
-    "Username": "guest", "Password": "guest",
-    "OrderPaymentSucceededQueue": "order-payment-succeeded",
-    "OrderPaymentFailedQueue": "order-payment-failed",
-    "GameCreatedIntegrationQueue": "order-game-created",
-    "GameDeactiveIntegrationQueue": "game-deactive",
-    "GameReactiveIntegrationQueue": "game-reactive"
+  "AzureServiceBus": {
+    "ConnectionString": "Endpoint=sb://<namespace>.servicebus.windows.net/;SharedAccessKeyName=<policy>;SharedAccessKey=<chave>",
+    "OrderPurchasedSucceededQueue": "order-payment-succeeded-queue",
+    "OrderPurchasedFailedQueue": "order-payment-failed-queue",
+    "GameCreatedIntegrationQueue": "order-game-created-integration-queue",
+    "GameDeactiveIntegrationQueue": "order-game-deactive-integration-queue",
+    "GameReactiveIntegrationQueue": "order-game-reactive-integration-queue",
+    "RegisterUserIntegrationQueue": "order-game-register-user-integration-queue"
   },
   "RedisSettings": {
     "Host": "localhost", "Port": "6379",
@@ -180,7 +185,10 @@ Ao rodar localmente, preencha o `appsettings.json`:
 > [!WARNING]
 > O `JwtSettings.Issuer` precisa ser **idêntico** ao configurado nos demais serviços e ao campo `key` do consumidor declarado no `kong.yml`. É por esse valor que o Kong localiza o segredo para validar a assinatura do token — uma divergência faz todas as rotas protegidas responderem `401` sem erro explicativo.
 
-No **Docker Compose** e no **Kubernetes**, essas variáveis são injetadas via `.env`, `ConfigMaps` e `Secrets`, no formato `DatabaseSettings__Host`, `RabbitMqSettings__Port` e assim por diante.
+> [!NOTE]
+> **AzureServiceBus** exige um namespace do Azure Service Bus no tier **Standard** ou superior (necessário para tópicos). A seção é validada na subida (`ValidateOnStart`): sem a connection string ou qualquer um dos nomes de fila, a API não inicia.
+
+No **Docker Compose** e no **Kubernetes**, essas variáveis são injetadas via `.env`, `ConfigMaps` (`k8s/order-configmap.yaml`) e segredos do **Azure Key Vault** (`fcg-secrets`), no formato `DatabaseSettings__Host`, `AzureServiceBus__ConnectionString`, `AzureServiceBus__GameCreatedIntegrationQueue` e assim por diante.
 
 ---
 
@@ -188,7 +196,7 @@ No **Docker Compose** e no **Kubernetes**, essas variáveis são injetadas via `
 
 ### Opção 1: Ecossistema completo (recomendado)
 
-Este microsserviço depende de MongoDB, SQL Server, RabbitMQ, Redis e dos demais serviços da FCG. A forma mais simples de executá-lo é pelo repositório de orquestração [fcg-infrastructure](https://github.com/alexoliveiraferreiradev/fcg-infrastructure), que sobe todo o ambiente com um único comando:
+Este microsserviço depende de MongoDB, SQL Server, Azure Service Bus, Redis e dos demais serviços da FCG. A forma mais simples de executá-lo é pelo repositório de orquestração [fcg-infrastructure](https://github.com/alexoliveiraferreiradev/fcg-infrastructure), que sobe todo o ambiente com um único comando:
 
 ```bash
 docker compose up -d
@@ -198,7 +206,8 @@ docker compose up -d
 
 #### Pré-requisitos
 - SDK do [.NET 9.0](https://dotnet.microsoft.com/download/dotnet/9.0) instalado.
-- MongoDB, SQL Server, RabbitMQ e Redis em execução e acessíveis.
+- MongoDB, SQL Server e Redis em execução e acessíveis.
+- Um namespace do **Azure Service Bus** (tier Standard ou superior) e a sua connection string.
 
 ```bash
 dotnet restore
